@@ -10,14 +10,15 @@ __all__ = ('XYDataSet', )
 
 
 class XYDataSet(torch.utils.data.Dataset):
-    def __init__(self, x: torch.Tensor, y: torch.Tensor):
+    def __init__(self, x: torch.Tensor, y: torch.Tensor, z: torch.Tensor):
         if len(x) != len(y):
             raise ValueError('size of x and y not match')
         self.x = x
         self.y = y
+        self.z = z
 
     def __len__(self) -> int:
         return len(self.x)
 
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
-        return self.x[idx], self.y[idx]
+        return self.x[idx], self.y[idx], self.z[idx]
