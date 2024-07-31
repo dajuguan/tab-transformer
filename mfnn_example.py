@@ -33,8 +33,8 @@ def figure1(x_low, y_low, x_high,  y_high, x, y):
 
 x = torch.linspace(0, 1, 501).reshape(-1, 1)
 y = func_high(x)
-x_low = torch.linspace(0, 1, 51).reshape(-1, 1)
-x_high = torch.linspace(0, 1, 15)[:14].reshape(-1, 1)
+x_low = torch.linspace(0, 1, 100).reshape(-1, 5)
+x_high = torch.linspace(0, 1, 60).reshape(-1, 3)
 y_low = func_low(x_low)
 y_high = func_high(x_high)
 loader_low = torch.utils.data.DataLoader(XYDataSet(x_low, y_low),
@@ -42,29 +42,27 @@ loader_low = torch.utils.data.DataLoader(XYDataSet(x_low, y_low),
 loader_high = torch.utils.data.DataLoader(XYDataSet(x_high, y_high),
                                             batch_size=len(x_low))
 
-# plot
-figure1(x_low, y_low, x_high,  y_high, x, y)
+## plot
+# figure1(x_low, y_low, x_high,  y_high, x, y)
 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
-model = FCNN(1, 1, [16, 16], torch.nn.Tanh)
+model = FCNN(x_low.size()[-1], y_low.size()[-1], [16, 16], torch.nn.Tanh)
 model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-4)
 STEPS = 5000
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.4*STEPS, 0.7*STEPS])
 critrion = torch.nn.MSELoss()
 
-
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
         "Train the model by given dataloader."
         t_start = time.time()
         model.train()
-        epochs_iter = tqdm.tqdm(range(STEPS), desc="Epoch")
+        epochs_iter = tqdm.tqdm(range(steps), desc="Epoch")
         tq = tqdm.tqdm(dataloader, desc="train", ncols=None, leave=False, unit="batch")
         # User defined preprocess
         for epoch in epochs_iter:
             runningLoss = 0.0
             for x, y in tq:
-                current_batch_size = x.shape[0]
                 x = x.to(device)
                 y = y.to(device)
 

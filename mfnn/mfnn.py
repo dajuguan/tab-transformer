@@ -3,6 +3,10 @@
 from __future__ import annotations
 import typing
 import torch
+import sys
+sys.path.append("..")
+from tab_transformer_pytorch import TabTransformer, FTTransformer
+from torch import nn
 
 TensorFunc = typing.Callable[[torch.Tensor], torch.Tensor]
 
@@ -34,8 +38,19 @@ class FCNN(torch.nn.Module):
                  ):
         super().__init__()
 
-        layer_sizes = [in_features] + midlayer_features
+        attn_features = 8
+        self.attention = FTTransformer(
+            categories = (),      # tuple containing the number of unique values within each category
+            num_continuous = in_features,                # number of continuous values
+            dim = 32,                           # dimension, paper set at 32
+            dim_out = attn_features,                        # binary prediction, but could be anything
+            depth = 6,                          # depth, paper recommended 6
+            heads = 8,                          # heads, paper recommends 8
+            attn_dropout = 0.1,                 # post-attention dropout
+            ff_dropout = 0.1                    # feed forward dropout
+        )
 
+        layer_sizes = [attn_features] + midlayer_features
         self.layers = torch.nn.Sequential(*[
             BasicBlock(layer_sizes[i], layer_sizes[i+1], activation)
             for i in range(len(midlayer_features))
@@ -43,6 +58,8 @@ class FCNN(torch.nn.Module):
         self.fc = torch.nn.Linear(layer_sizes[-1], out_features)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x_categ = torch.tensor([]) # dummy categ need by ft_transformer
+        x = self.attention(x_categ, x)
         x = self.layers(x)
         x = self.fc(x)
         return x

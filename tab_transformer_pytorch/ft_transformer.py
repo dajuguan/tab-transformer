@@ -217,7 +217,6 @@ class FTTransformer(nn.Module):
         # out in the paper is linear(relu(ln(cls)))
 
         logits = self.to_logits(x)
-
         if not return_attn:
             return logits
 
