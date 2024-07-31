@@ -163,7 +163,7 @@ class TabTransformer(nn.Module):
         shared_categ_dim_divisor = 8.   # in paper, they reserve dimension / 8 for category shared embedding
     ):
         super().__init__()
-        assert all(map(lambda n: n > 0, categories)), 'number of each category must be positive'
+        assert all(map(lambda n: n >= 0, categories)), 'number of each category must be positive'
         assert len(categories) + num_continuous > 0, 'input shape must not be null'
 
         # categories related calculations

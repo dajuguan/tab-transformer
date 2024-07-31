@@ -9,6 +9,8 @@ Update: Amazon AI claims to have beaten GBDT with Attention on <a href="https://
 ## Install
 
 ```bash
+system python
+pip install einops
 $ pip install tab-transformer-pytorch
 ```
 
