@@ -26,6 +26,7 @@ model = FTTransformer(
     dim_out = 3,                        # binary prediction, but could be anything
     depth = 6,                          # depth, paper recommended 6
     heads = 8,                          # heads, paper recommends 8
+    d_rope = 4,                         # the first d_rope features that needs positional encoding
     attn_dropout = 0.1,                 # post-attention dropout
     ff_dropout = 0.1                    # feed forward dropout
 )

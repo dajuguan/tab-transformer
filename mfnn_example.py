@@ -42,7 +42,7 @@ loader_high = torch.utils.data.DataLoader(XYDataSet(x_low, y_low, y_high), batch
 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
 print("training on: ", device)
-model = FCNN(x_low.size()[-1], y_high.size()[-1], [16, 16], torch.nn.Tanh, low_fidelity_features=y_low.size()[-1])
+model = FCNN(x_low.size()[-1], y_high.size()[-1], [16, 16], 0, torch.nn.Tanh, low_fidelity_features=y_low.size()[-1])
 
 model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)

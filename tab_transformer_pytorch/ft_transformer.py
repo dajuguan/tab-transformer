@@ -1,8 +1,10 @@
 import torch
 import torch.nn.functional as F
 from torch import nn, einsum
-
 from einops import rearrange, repeat
+import sys
+sys.path.append("../")
+from rope.rotary_pos_embedding import RotaryPositionalEmbeddings
 
 # feedforward and attention
 
@@ -24,9 +26,11 @@ class Attention(nn.Module):
     def __init__(
         self,
         dim,
+        d_rope, # part of features dimension used for rotary positional encoding
         heads = 8,
         dim_head = 64,
-        dropout = 0.
+        dropout = 0.,
+
     ):
         super().__init__()
         inner_dim = dim_head * heads
@@ -40,6 +44,9 @@ class Attention(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
+        self.query_rotary_pe = RotaryPositionalEmbeddings(d_rope)
+        self.key_rotary_pe = RotaryPositionalEmbeddings(d_rope)
+
     def forward(self, x):
         h = self.heads
 
@@ -48,6 +55,10 @@ class Attention(nn.Module):
         q, k, v = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
         q = q * self.scale
+
+        # rotary encoding  for the first d_rope features
+        q = self.query_rotary_pe(q)
+        k = self.key_rotary_pe(k)
 
         sim = einsum('b h i d, b h j d -> b h i j', q, k)
 
@@ -68,6 +79,7 @@ class Transformer(nn.Module):
         dim,
         depth,
         heads,
+        d_rope, 
         dim_head,
         attn_dropout,
         ff_dropout
@@ -77,7 +89,7 @@ class Transformer(nn.Module):
 
         for _ in range(depth):
             self.layers.append(nn.ModuleList([
-                Attention(dim, heads = heads, dim_head = dim_head, dropout = attn_dropout),
+                Attention(dim, d_rope = d_rope, heads = heads, dim_head = dim_head, dropout = attn_dropout),
                 FeedForward(dim, dropout = ff_dropout),
             ]))
 
@@ -116,9 +128,10 @@ class FTTransformer(nn.Module):
         *,
         categories,
         num_continuous,
-        dim,
+        dim,  # embedding dim for numerical features
         depth,
         heads,
+        d_rope,
         dim_head = 16,
         dim_out = 1,
         num_special_tokens = 2,
@@ -167,6 +180,7 @@ class FTTransformer(nn.Module):
             dim = dim,
             depth = depth,
             heads = heads,
+            d_rope = d_rope,
             dim_head = dim_head,
             attn_dropout = attn_dropout,
             ff_dropout = ff_dropout
