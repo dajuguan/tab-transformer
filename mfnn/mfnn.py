@@ -34,7 +34,7 @@ class FCNN(torch.nn.Module):
                  in_features: int,
                  out_features: int,
                  midlayer_features: list[int],
-                 d_rope: int = 0,
+                 dim_rope_seq: int = 0,
                  activation: type[torch.nn.Module] = torch.nn.Tanh,
                  low_fidelity_features: int = 0
                  ):
@@ -45,7 +45,7 @@ class FCNN(torch.nn.Module):
             categories = (),      # tuple containing the number of unique values within each category
             num_continuous = in_features,                # number of continuous values
             dim = 32,                           # dimension, paper set at 32
-            d_rope= d_rope,
+            dim_rope_seq= dim_rope_seq,
             dim_out = attn_features,                        # binary prediction, but could be anything
             depth = 6,                          # depth, paper recommended 6
             heads = 8,                          # heads, paper recommends 8

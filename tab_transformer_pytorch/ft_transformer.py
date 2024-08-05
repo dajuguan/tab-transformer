@@ -27,6 +27,7 @@ class Attention(nn.Module):
         self,
         dim,
         d_rope, # part of features dimension used for rotary positional encoding
+        dim_rope_seq = 0,
         heads = 8,
         dim_head = 64,
         dropout = 0.,
@@ -44,7 +45,7 @@ class Attention(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-        self.query_rotary_pe = RotaryPositionalEmbeddings(d_rope)
+        self.query_rotary_pe = RotaryPositionalEmbeddings(d_rope, dim_rope_seq)
         self.key_rotary_pe = RotaryPositionalEmbeddings(d_rope)
 
     def forward(self, x):
@@ -80,6 +81,7 @@ class Transformer(nn.Module):
         depth,
         heads,
         d_rope, 
+        dim_rope_seq,
         dim_head,
         attn_dropout,
         ff_dropout
@@ -89,7 +91,7 @@ class Transformer(nn.Module):
 
         for _ in range(depth):
             self.layers.append(nn.ModuleList([
-                Attention(dim, d_rope = d_rope, heads = heads, dim_head = dim_head, dropout = attn_dropout),
+                Attention(dim, d_rope = d_rope, dim_rope_seq = dim_rope_seq, heads = heads, dim_head = dim_head, dropout = attn_dropout),
                 FeedForward(dim, dropout = ff_dropout),
             ]))
 
@@ -131,7 +133,7 @@ class FTTransformer(nn.Module):
         dim,  # embedding dim for numerical features
         depth,
         heads,
-        d_rope,
+        dim_rope_seq = 0,
         dim_head = 16,
         dim_out = 1,
         num_special_tokens = 2,
@@ -180,7 +182,8 @@ class FTTransformer(nn.Module):
             dim = dim,
             depth = depth,
             heads = heads,
-            d_rope = d_rope,
+            d_rope = dim_head,  # set all rows of embedding features to be used
+            dim_rope_seq = dim_rope_seq,
             dim_head = dim_head,
             attn_dropout = attn_dropout,
             ff_dropout = ff_dropout

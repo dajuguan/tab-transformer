@@ -113,7 +113,8 @@ class RotaryPositionalEmbeddings(nn.Module):
     \end{align}
     """
 
-    def __init__(self, d: int, base: int = 10_000):
+    # dim_rope_seq: number of rows of embeding fetures used in encoding 
+    def __init__(self, d: int, dim_rope_seq: int = 0, base: int = 10_000):
         """
         * `d` is the number of features $d$
         * `base` is the constant used for calculating $\Theta$
@@ -124,6 +125,7 @@ class RotaryPositionalEmbeddings(nn.Module):
         self.d = d
         self.cos_cached = None
         self.sin_cached = None
+        self.dim_rope_seq = dim_rope_seq
 
     def _build_cache(self, x: torch.Tensor):
         """
@@ -167,14 +169,15 @@ class RotaryPositionalEmbeddings(nn.Module):
         """
         * `x` is the Tensor at the head of a key or a query with shape `[seq_len, batch_size, n_heads, d]`
         """
-        if self.d == 0:
+        if self.d == 0 or self.dim_rope_seq == 0:
             return x
         
         # Cache $\cos$ and $\sin$ values
-        self._build_cache(x)
+        x_rope_seq, x_rope_seq_pass = x[:, :self.dim_rope_seq, ...], x[:, self.dim_rope_seq:, ...]  # [batch_size, seq_len, n_heads, d]
+        self._build_cache(x_rope_seq)
 
         # Split the features, we can choose to apply rotary embeddings only to a partial set of features.
-        x_rope, x_pass = x[..., :self.d], x[..., self.d:]
+        x_rope, x_pass = x_rope_seq[..., :self.d], x_rope_seq[..., self.d:]
 
         # Calculate
         # $[-x^{(\frac{d}{2} + 1)}, -x^{(\frac{d}{2} + 2)}, ..., -x^{(d)}, x^{(1)}, x^{(2)}, ..., x^{(\frac{d}{2})}]$
@@ -190,10 +193,11 @@ class RotaryPositionalEmbeddings(nn.Module):
         # \end{align}
         #
         # for $i \in {1, 2, ..., \frac{d}{2}}$
-        x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])
+        x_rope = (x_rope * self.cos_cached[:x_rope_seq.shape[0]]) + (neg_half_x * self.sin_cached[:x_rope_seq.shape[0]])
 
         #
-        return torch.cat((x_rope, x_pass), dim=-1)
+        x_rope_seq = torch.cat((x_rope, x_pass), dim=-1)
+        return torch.cat((x_rope_seq, x_rope_seq_pass), dim=1)
 
 
 # from labml.logger import inspect
