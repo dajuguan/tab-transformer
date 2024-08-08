@@ -36,38 +36,51 @@ class FCNN(torch.nn.Module):
                  midlayer_features: list[int],
                  dim_rope_seq: int = 0,
                  activation: type[torch.nn.Module] = torch.nn.Tanh,
-                 low_fidelity_features: int = 0
+                 low_fidelity_features: int = 0,
+                 enable_attention=True
                  ):
         super().__init__()
 
-        attn_features = 5
+        attn_features = 16
         self.attention = FTTransformer(
             categories = (),      # tuple containing the number of unique values within each category
-            num_continuous = in_features,                # number of continuous values
+            num_continuous = in_features + low_fidelity_features,                # number of continuous values
             dim = 32,                           # dimension, paper set at 32
             dim_rope_seq= dim_rope_seq,
-            dim_out = attn_features,                        # binary prediction, but could be anything
+            dim_out = attn_features,             # binary prediction, but could be anything
             depth = 6,                          # depth, paper recommended 6
             heads = 8,                          # heads, paper recommends 8
-            attn_dropout = 0.05,                 # post-attention dropout
-            ff_dropout = 0.05                    # feed forward dropout
+            attn_dropout = 0.1,                 # post-attention dropout
+            ff_dropout = 0.1                   # feed forward dropout
         )
 
-        x_low_feature_dim = attn_features + low_fidelity_features
+        if enable_attention:
+            print("Attention enabled")
+            x_low_feature_dim = attn_features + low_fidelity_features
+            x_low_feature_dim = attn_features
+        else:
+            print("Attention disabled")
+            x_low_feature_dim = low_fidelity_features + in_features
         layer_sizes = [x_low_feature_dim] + midlayer_features + [out_features]
         self.layers = torch.nn.Sequential(*[
             BasicBlock(layer_sizes[i], layer_sizes[i+1], activation)
             for i in range(len(layer_sizes) - 1)
         ])
-        self.fc = torch.nn.Linear(x_low_feature_dim , out_features)
+        self.fc = torch.nn.Linear(low_fidelity_features , out_features)
+        self.enable_attention = enable_attention
 
     def forward(self, x: torch.Tensor, y_low: torch.Tensor) -> torch.Tensor:
         x_categ = torch.tensor([]) # dummy categ need by ft_transformer
-        x = self.attention(x_categ, x)
-        x_combine_ylow = torch.concat([x, y_low], dim=1)
+        if self.enable_attention:
+            # x = self.attention(x_categ, x)
+
+            x = torch.concat([x, y_low], dim=1)
+            x_combine_ylow = self.attention(x_categ, x)
+        else:
+            x_combine_ylow = torch.concat([x, y_low], dim=1)
         y_nonlinear = self.layers(x_combine_ylow)  # non-linear term
-        y_linear = self.fc(x_combine_ylow)
-        return y_nonlinear + y_linear
+        y_linear = self.fc(y_low)
+        return y_nonlinear
 
 if __name__ == '__main__':
 

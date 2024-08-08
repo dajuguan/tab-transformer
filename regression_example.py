@@ -3,13 +3,13 @@ import torch.nn as nn
 from tab_transformer_pytorch import TabTransformer
 from tab_transformer_pytorch import FTTransformer
 
-cont_mean_std = torch.randn(10, 2)
+cont_mean_std = torch.randn(3, 2)
 
 model = TabTransformer(
     categories=(),
-    num_continuous = 10,                # number of continuous values
+    num_continuous = 3,                # number of continuous values
     dim = 32,                           # dimension, paper set at 32
-    dim_out = 1,                        # binary prediction, but could be anything
+    dim_out = 3,                        # binary prediction, but could be anything
     depth = 6,                          # depth, paper recommended 6
     heads = 8,                          # heads, paper recommends 8
     attn_dropout = 0.1,                 # post-attention dropout
@@ -19,17 +19,17 @@ model = TabTransformer(
     continuous_mean_std = cont_mean_std # (optional) - normalize the continuous values before layer norm
 )
 
-model = FTTransformer(
-    categories = (),      # tuple containing the number of unique values within each category
-    num_continuous = 3,                # number of continuous values
-    dim = 32,                           # dimension, paper set at 32
-    dim_out = 3,                        # binary prediction, but could be anything
-    depth = 6,                          # depth, paper recommended 6
-    heads = 8,                          # heads, paper recommends 8
-    dim_rope_seq = 4,                         # the first d_rope features that needs positional encoding
-    attn_dropout = 0.1,                 # post-attention dropout
-    ff_dropout = 0.1                    # feed forward dropout
-)
+# model = FTTransformer(
+#     categories = (),      # tuple containing the number of unique values within each category
+#     num_continuous = 3,                # number of continuous values
+#     dim = 32,                           # dimension, paper set at 32
+#     dim_out = 3,                        # binary prediction, but could be anything
+#     depth = 6,                          # depth, paper recommended 6
+#     heads = 8,                          # heads, paper recommends 8
+#     dim_rope_seq = 4,                         # the first d_rope features that needs positional encoding
+#     attn_dropout = 0.1,                 # post-attention dropout
+#     ff_dropout = 0.1                    # feed forward dropout
+# )
 
 import numpy as np
 
@@ -57,7 +57,7 @@ for epoch in range(STEPS):
 
 model.eval()
 N=4
-pred, attn = model(x_categ,x_data[0:N,:], True) # (1, 1)
+pred = model(x_categ,x_data[0:N,:], False) # (1, 1)
 print("true:\n", y_data[0:N,:])
 print("pred:\n", pred)
-print("attn:", attn.size())
+# print("attn:", attn.size())
