@@ -7,7 +7,7 @@ import time
 import numpy as np
 from mfnn.data_loader import loadData
 
-x_low,y_low, y_high, loader_high, r_2d, r_3d = loadData() 
+x_low,y_low, y_high, loader_high, r_2d, r_3d, _ = loadData() 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
 model = FCNN(x_low.size()[-1], y_high.size()[-1], [32, 64, 128], 0, torch.nn.LeakyReLU, low_fidelity_features=y_low.size()[-1])
 model.to(torch.double)
@@ -48,15 +48,17 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
 if __name__ == "__main__":
     print("training on: ", device)
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-8)
     STEPS = 5000
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*STEPS, 0.8*STEPS])
     critrion = torch.nn.L1Loss()
     critrion = torch.nn.MSELoss()
-    train(model, loader_high, critrion, optimizer, STEPS, device)
+    critrion = torch.nn.SmoothL1Loss()
+    # train(model, loader_high, critrion, optimizer, STEPS, device)
     ## eval
     N=1
     model.eval()
+    model.load_state_dict(state_dict=torch.load(model_path))
     x_test = x_low[:N].to(device)
     y_low_test = y_low[:N].to(device)
     y_pred = model(x_test, y_low_test).to("cpu").detach().numpy()
@@ -71,9 +73,9 @@ if __name__ == "__main__":
     #     y_low_test = y_low[i-1:i].to(device)
 
     #     y_pred = model(x_test, y_low_test).to("cpu").detach().numpy()[0]
-    #     y_true = y_high[i].detach().numpy()
+    #     y_true = y_high[i-1].detach().numpy()
 
-    #     plt.plot(y_low[i]/100, r_2d, "-b", label="2d")
+    #     plt.plot(y_low[i-1]/100, r_2d, "-b", label="2d")
     #     plt.plot(y_pred/100, r_3d, '-r',label="pred")
     #     plt.plot(y_true/100, r_3d, '--k',label="true")
     #     plt.legend()

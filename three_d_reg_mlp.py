@@ -1,5 +1,5 @@
 from mfnn.mfnn import FCNN
-from mfnn.xydata import XYDataSet
+from mfnn.xydata import XYZDataSet
 import torch
 import tqdm
 import matplotlib.pyplot as plt
@@ -7,10 +7,9 @@ import time
 import numpy as np
 from mfnn.data_loader import loadData
 
-x_low,y_low, y_high, loader_high, r_2d, r_3d = loadData() 
+x_low,y_low, y_high, loader_high, r_2d, r_3d, y_high_encoded = loadData() 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
-
-loader_high = torch.utils.data.DataLoader(XYDataSet(x_low, y_low, y_high), batch_size=len(x_low))
+print(x_low.shape, y_high.shape)
 
 ## plot
 # figure1(x_low, y_low, x_high,  y_high, x, y)
@@ -19,9 +18,10 @@ device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
 model = FCNN(
      x_low.size()[-1], 
      y_high.size()[-1], 
-     [32, 64, 128], 
+     [32, 64, 128, 256, 512, 256], 
      0, 
      torch.nn.LeakyReLU, 
+    # torch.nn.ReLU, 
      low_fidelity_features=y_low.size()[-1],
      enable_attention=False
      )
@@ -66,8 +66,9 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
 
 if __name__ == "__main__":
     #  print("x_low", x_low.shape, y_high.shape, y_low.shape)
+    from autoencoder import loadModel
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-9)
     STEPS = 10000
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*STEPS, 0.8*STEPS])
     critrion = torch.nn.L1Loss()
@@ -77,6 +78,7 @@ if __name__ == "__main__":
     train(model, loader_high, critrion, optimizer, STEPS, device)
     ## eval
     N=1
+    model.load_state_dict(state_dict=torch.load(model_path))
     model.eval()
     x_test = x_low[:N].to(device)
     y_low_test = y_low[:N].to(device)
@@ -84,17 +86,20 @@ if __name__ == "__main__":
 
     float_formatter = "{:.4f}".format
     np.set_printoptions(formatter={'float_kind':float_formatter})
-    print("y_pred:\n", y_pred[:, :7],y_pred[:, -7:])
-    print("y_true:\n", y_high[:N].detach().numpy()[:, :7], y_high[:N].detach().numpy()[:, -7:])
+    print("y_pred:\n", y_pred)
+    print("y_true:\n", y_high_encoded.detach().numpy())
 
+    # ae_model = loadModel()
     # for i in range(1, 50):
     #     x_test = x_low[i-1:i].to(device)
     #     y_low_test = y_low[i-1:i].to(device)
 
     #     y_pred = model(x_test, y_low_test).to("cpu").detach().numpy()[0]
-    #     y_true = y_high[i].detach().numpy()
+    #     # y_pred = model(x_test, y_low_test).to("cpu")
+    #     # y_pred = ae_model.decoder(y_pred).detach().numpy()[0]
+    #     y_true = y_high[i-1].detach().numpy()
 
-    #     plt.plot(y_low[i]/100, r_2d, "-b", label="2d")
+    #     plt.plot(y_low[i-1]/100, r_2d, "-b", label="2d")
     #     plt.plot(y_pred/100, r_3d, '-r',label="pred")
     #     plt.plot(y_true/100, r_3d, '--k',label="true")
     #     plt.legend()
