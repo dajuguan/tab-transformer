@@ -18,17 +18,18 @@ device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
 model = FCNN(
      x_low.size()[-1], 
      y_high.size()[-1], 
-     [128, 256, 512, 256], 
+    [128, 256, 512, 256], 
      0, 
      torch.nn.LeakyReLU, 
     # torch.nn.ReLU, 
      low_fidelity_features=y_low.size()[-1],
-     enable_attention=False
+     enable_attention=False,
+     enable_embedding=True
      )
 
 model.to(torch.double)
-model_path = "./data/mlp.model"
-loss_path = "./data/mlp.loss"
+model_path = "./data/mlp_embedding.model"
+loss_path = "./data/mlp_embedding.loss"
 
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
     "Train the model by given dataloader."
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     #  print("x_low", x_low.shape, y_high.shape, y_low.shape)
     from autoencoder import loadModel
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-9)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-8)
     STEPS = 5000
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*STEPS, 0.8*STEPS])
     critrion = torch.nn.L1Loss()

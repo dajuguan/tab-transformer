@@ -114,6 +114,7 @@ class RotaryPositionalEmbeddings(nn.Module):
     """
 
     # dim_rope_seq: number of rows of embeding fetures used in encoding 
+    # example: batchsize* 100 (rows)* 16 (features), 16 is d, dim_rope_seq could be any number <= 100
     def __init__(self, d: int, dim_rope_seq: int = 0, base: int = 10_000):
         """
         * `d` is the number of features $d$
@@ -177,6 +178,7 @@ class RotaryPositionalEmbeddings(nn.Module):
         self._build_cache(x_rope_seq)
 
         # Split the features, we can choose to apply rotary embeddings only to a partial set of features.
+        # Actually, here we use all the features, so this line has no effect
         x_rope, x_pass = x_rope_seq[..., :self.d], x_rope_seq[..., self.d:]
 
         # Calculate

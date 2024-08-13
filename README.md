@@ -1,5 +1,8 @@
 <img src="./tab.png" width="250px"></img>
 
+## 论文数据说明
+14, 58
+
 ## Tab Transformer
 
 Implementation of <a href="https://arxiv.org/abs/2012.06678">Tab Transformer</a>, attention network for tabular data, in Pytorch. This simple architecture came within a hair's breadth of GBDT's performance.

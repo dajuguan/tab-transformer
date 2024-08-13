@@ -87,7 +87,7 @@ def setup_seed(seed):
 
 # setup_seed(30)
 
-X, Y, dataloader = loadStackingData()
+X, Y, dataloader, _, xt, yt = loadStackingData()
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
 
 # pressure_distribution = np.loadtxt(r"/home/po/phd/avalanche/pressure_distribution.csv", delimiter=",", dtype=np.float32)
@@ -97,14 +97,17 @@ device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
 # dataset  = torch.utils.data.dataset.TensorDataset(X, Y)   
 # dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(X), pin_memory=True)
 
-model = MySimpleMLP(Y.shape[-1], X.shape[-1], hidden_size=128, hidden_layers=5, drop_rate=0.0)
+model = MySimpleMLP(Y.shape[-1], X.shape[-1], hidden_size=128, hidden_layers=5, drop_rate=0.00)
 
 # model.to(torch.double)
 model_path = "./data/mlp_stacking.model"
 
+loss_path = "./data/mlp_stacking.loss"
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
         "Train the model by given dataloader."
         t_start = time.time()
+        train_loss, test_loss = [], []
+        _xt = xt.to(device)
         model.train()
         epochs_iter = tqdm.tqdm(range(steps), desc="Epoch")
         tq = tqdm.tqdm(dataloader, desc="train", ncols=None, leave=False, unit="batch")
@@ -130,8 +133,14 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
             
             scheduler.step()
 
+            yt_pred = model(_xt).to("cpu")
+            loss_test = critrion(yt_pred, yt).item()
+            train_loss.append(runningLoss)
+            test_loss.append(loss_test)
+
         torch.save(model.state_dict(), model_path)
         print("training complete", f'wall time = {time.time()- t_start:.2f}s')
+        torch.save({"train": train_loss, "test": test_loss}, loss_path)
 
 
 
@@ -139,12 +148,12 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
 if __name__ == "__main__":
     #  print("x_low", x_low.shape, y_high.shape, y_low.shape)
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
-    STEPS = 4000
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-6)
+    STEPS = 2000
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*STEPS, 0.8*STEPS])
     critrion = torch.nn.L1Loss()
     critrion = torch.nn.MSELoss()
-    # critrion = torch.nn.SmoothL1Loss()
+    critrion = torch.nn.SmoothL1Loss()
 
     train(model, dataloader, critrion, optimizer, STEPS, device)
     ## eval

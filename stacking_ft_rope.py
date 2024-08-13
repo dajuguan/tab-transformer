@@ -14,17 +14,17 @@ model = FTTransformer(
     categories = (),      # tuple containing the number of unique values within each category
     num_continuous = X.shape[-1],                # number of continuous values
     dim = 32,                           # dimension, paper set at 32
-    dim_out = Y.shape[-1],                        # binary prediction, but could be anything
+    dim_out = Y.shape[-1],              # binary prediction, but could be anything
     depth = 6,                          # depth, paper recommended 6
     heads = 8,                          # heads, paper recommends 8
-    dim_rope_seq = 0,                   # the first d_rope features that needs positional encoding
-    attn_dropout = 0.0,                 # post-attention dropout
-    ff_dropout = 0.0                    # feed forward dropout
+    dim_rope_seq = dim_rope_seq,        # the first d_rope features that needs positional encoding
+    attn_dropout = 0.00,                # post-attention dropout
+    ff_dropout = 0.00                   # feed forward dropout
 )
 
-model_path = "./data/ft_stacking.model"
+model_path = "./data/ft_rope_stacking.model"
+loss_path = "./data/ft_rope_stacking.loss"
 
-loss_path = "./data/ft_stacking.loss"
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
         "Train the model by given dataloader."
         t_start = time.time()
@@ -64,11 +64,10 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
         print("training complete", f'wall time = {time.time()- t_start:.2f}s')
         torch.save({"train": train_loss, "test": test_loss}, loss_path)
 
-
 if __name__ == "__main__":
     #  print("x_low", x_low.shape, y_high.shape, y_low.shape)
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-6)
     STEPS = 2000
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*STEPS, 0.8*STEPS])
     critrion = torch.nn.L1Loss()

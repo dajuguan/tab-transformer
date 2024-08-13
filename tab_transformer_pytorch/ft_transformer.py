@@ -26,8 +26,8 @@ class Attention(nn.Module):
     def __init__(
         self,
         dim,
-        d_rope, # part of features dimension used for rotary positional encoding
-        dim_rope_seq = 0,
+        d_rope, 
+        dim_rope_seq = 0, # part of features dimension used for rotary positional encoding
         heads = 8,
         dim_head = 64,
         dropout = 0.,
@@ -46,7 +46,7 @@ class Attention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         self.query_rotary_pe = RotaryPositionalEmbeddings(d_rope, dim_rope_seq)
-        self.key_rotary_pe = RotaryPositionalEmbeddings(d_rope)
+        self.key_rotary_pe = RotaryPositionalEmbeddings(d_rope, dim_rope_seq)
 
     def forward(self, x):
         h = self.heads

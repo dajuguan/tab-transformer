@@ -7,16 +7,26 @@ import time
 import numpy as np
 from mfnn.data_loader import loadData
 
-x_low,y_low, y_high, loader_high, r_2d, r_3d, _ = loadData() 
+x_low,y_low, y_high, loader_high, r_2d, r_3d, xt_low, yt_low, yt_high = loadData() 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
-model = FCNN(x_low.size()[-1], y_high.size()[-1], [32, 64, 128], 0, torch.nn.LeakyReLU, low_fidelity_features=y_low.size()[-1])
+model = FCNN(
+    x_low.size()[-1], 
+    y_high.size()[-1], 
+    [128, 256, 256], 
+    0, 
+    torch.nn.LeakyReLU, 
+    low_fidelity_features=y_low.size()[-1]
+    )
 model.to(torch.double)
 model_path = "./data/ft.model"
+loss_path = "./data/ft.loss"
 # print("x_low", x_low.shape, y_high.shape, y_low.shape)
 
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
     "Train the model by given dataloader."
     t_start = time.time()
+    train_loss, test_loss = [], []
+    _xt_low, _yt_low = xt_low.to(device), yt_low.to(device)
     model.train()
     epochs_iter = tqdm.tqdm(range(steps), desc="Epoch")
     tq = tqdm.tqdm(dataloader, desc="train", ncols=None, leave=False, unit="batch")
@@ -38,12 +48,18 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
             optimizer.step()
             tq.set_postfix(loss=f"{loss.item():.4e}")
 
-            # record results
+        # record results
         epochs_iter.set_postfix(loss=f"{runningLoss:.4e}")
-        
+        # run test
+        yt_pred = model(_xt_low, _yt_low).to("cpu")
+        loss_test = critrion(yt_pred, yt_high).item()
+        train_loss.append(runningLoss)
+        test_loss.append(loss_test)
+
         scheduler.step()
     print("training complete", f'wall time = {time.time()- t_start:.2f}s')
     torch.save(model.state_dict(), model_path)
+    torch.save({"train": train_loss, "test": test_loss}, loss_path)
 
 if __name__ == "__main__":
     print("training on: ", device)
@@ -54,7 +70,7 @@ if __name__ == "__main__":
     critrion = torch.nn.L1Loss()
     critrion = torch.nn.MSELoss()
     critrion = torch.nn.SmoothL1Loss()
-    # train(model, loader_high, critrion, optimizer, STEPS, device)
+    train(model, loader_high, critrion, optimizer, STEPS, device)
     ## eval
     N=1
     model.eval()
