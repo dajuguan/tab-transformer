@@ -70,7 +70,7 @@ if __name__ == "__main__":
     critrion = torch.nn.L1Loss()
     critrion = torch.nn.MSELoss()
     critrion = torch.nn.SmoothL1Loss()
-    train(model, loader_high, critrion, optimizer, STEPS, device)
+    # train(model, loader_high, critrion, optimizer, STEPS, device)
     ## eval
     N=1
     model.eval()

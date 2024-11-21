@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 
+import scienceplots
+defaultTicks =  {'xtick.top':False,'ytick.right':False}
+plt.style.use(['science','ieee','no-latex',defaultTicks])
+
 ft_loss_path = "./data/ft.loss"
 ft_loss = torch.load(ft_loss_path)
 ft_loss_train, ft_loss_test = np.array(ft_loss["train"]), np.array(ft_loss["test"])

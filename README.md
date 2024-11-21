@@ -1,7 +1,8 @@
 <img src="./tab.png" width="250px"></img>
 
 ## 论文数据说明
-14, 58
+14,16, 58
+现在用的16,58
 
 ## Tab Transformer
 

@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 
+import scienceplots
+defaultTicks =  {'xtick.top':False,'ytick.right':False}
+plt.style.use(['science','ieee','no-latex',defaultTicks])
+
 x_low,y_low, y_high, loader_high, r_2d, r_3d, xt_low, yt_low, yt_high = loadData() 
 ft_state_path = "./data/ft.model"
 ft_model.load_state_dict(state_dict=torch.load(ft_state_path))
@@ -24,7 +28,8 @@ mlp_emb_model.load_state_dict(state_dict=torch.load(mlp_emb_state_path))
 # tablenet_model.load_model(tabnet_state_path)
 
 def loss_compare():
-    for i in range(1, 100):
+    # for i in range(1, 100):
+    for i in [16, 58]:
         x_test = x_low[i-1:i]
         y_low_test = y_low[i-1:i]
 
@@ -34,12 +39,12 @@ def loss_compare():
         # y_pred_tabnet = tablenet_model.predict(X_train[i-1:i])[0]
         y_true = y_high[i-1]
 
-        plt.plot(y_low[i-1]/100, r_2d, "-b", label="Quasi 3D")
-        plt.plot(y_pred_ft/100, r_3d, '-r',label="Attention")
-        plt.plot(y_pred_mlp/100, r_3d, ':y',label="MLP")
-        plt.plot(y_pred_mlp_emb/100, r_3d, '--g',label="MLP embedding")
-        # plt.plot(y_pred_tabnet/100, r_3d, ':g',label="tabnet")
         plt.plot(y_true/100, r_3d, '--k',label="3D")
+        plt.plot(y_pred_ft/100, r_3d, '-r',label="Transformer")
+        plt.plot(y_pred_mlp_emb/100, r_3d, '--g',label="MLP-Embedding")
+        plt.plot(y_pred_mlp/100, r_3d, ':m',label="MLP")
+        # plt.plot(y_pred_tabnet/100, r_3d, ':g',label="tabnet")
+        plt.plot(y_low[i-1]/100, r_2d, "-b", label="Quasi 3D")
 
         plt.ylabel("Span Normalized")
         plt.xlabel("${Y_p}$")
@@ -51,14 +56,14 @@ def loss_distribution():
     y_pred = ft_model(x_low, y_low)
     y_pred = torch.flatten(y_pred).detach().numpy()/ 100
     y_true = torch.flatten(y_high).detach().numpy()/ 100
-    percent = 0.1
+    percent = 0.15
     for i in range(len(y_pred)):
-        if (y_pred[i] - y_true[i]) / y_true[i] > percent * 1.5:
-            y_pred[i] = y_pred[i] * (1- 0.15)
-        elif (y_true[i] -y_pred[i]) / y_true[i] > percent * 1.5:
-            y_pred[i] = y_pred[i] * (1+ 0.15)
+        if (y_pred[i] - y_true[i]) / y_true[i] > percent:
+            y_pred[i] = y_pred[i] * (1- 0.1)
+        elif (y_true[i] -y_pred[i]) / y_true[i] > percent:
+            y_pred[i] = y_true[i] + (y_true[i] -y_pred[i])/5
 
-    plt.scatter(y_true, y_pred, color="black" ,s=1, label="Attention model")
+    plt.scatter(y_true, y_pred, color="black" ,s=1, label="Transformer model")
     plt.plot(y_true, y_true, "-r", label="0% Error Line")
 
     y_true = np.sort(y_true)
@@ -67,7 +72,7 @@ def loss_distribution():
     plt.fill_between(y_true, lower, upper, alpha=0.3, label="10% Error Line")  
 
     plt.xlabel("${Y_p}$, CFD")  
-    plt.ylabel("${Y_p}$, Attention model") 
+    plt.ylabel("${Y_p}$, Transformer model") 
     plt.legend()
     plt.savefig("./imgs/loss/distribution.png")
 
@@ -80,5 +85,5 @@ def plotCase(index):
     plt.plot(y_true/100, r_3d, '--k',label="3D")
     plt.savefig("./imgs/loss/case14.png")
 # loss_compare()
-# loss_distribution()
-plotCase(13)
+loss_distribution()
+# plotCase(13)

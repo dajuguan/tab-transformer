@@ -7,6 +7,11 @@ import torch
 from sklearn.metrics import r2_score
 import numpy as np
 
+
+import scienceplots
+defaultTicks =  {'xtick.top':False,'ytick.right':False}
+plt.style.use(['science','ieee','no-latex',defaultTicks])
+
 X, Y, dataloader, _, xt, yt = loadStackingData() 
 ft_state_path = "./data/ft_stacking.model"
 ft_model.load_state_dict(state_dict=torch.load(ft_state_path))
@@ -44,13 +49,13 @@ y_pred = ft_rope_model(torch.tensor([]), X)
 y_pred = torch.flatten(y_pred).detach().numpy()*5
 y_true = torch.flatten(Y).detach().numpy()*5
 plt.plot(y_true, y_true, "-r",label="True")
-plt.scatter(y_true, y_pred, color="black", s=8, label="Predicted")
+plt.scatter(y_true, y_pred, color="black", s=2, label="Tranformer-RoPE predicted")
 
 y_true_sorted = np.sort(y_true)
 lower = y_true_sorted - 1
 upper = y_true_sorted + 1
-plt.fill_between(y_true_sorted, lower, upper, alpha=0.8, label="1° Error Line")
-plt.xlabel("True bow and lean angle / °")
-plt.ylabel("Predicted angle / °")
+plt.fill_between(y_true_sorted, lower, upper, alpha=1, color="blue", label=r"1$\degree$ Error Line")
+plt.xlabel("True bow and lean angle / $\degree$")
+plt.ylabel("Predicted bow and lean angle / $\degree$")
 plt.legend()
 plt.savefig("./imgs/loss/stacking_distri.png")
