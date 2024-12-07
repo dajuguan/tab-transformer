@@ -18,14 +18,15 @@ plt.plot(mlp_loss_test, "-k", label="MLP Test")
 ft_loss_path = "./data/ft_stacking.loss"
 ft_loss = torch.load(ft_loss_path)
 ft_loss_train, ft_loss_test = np.array(ft_loss["train"]), np.array(ft_loss["test"])
-plt.plot(ft_loss_train, "--b", label="Transformer Train")
-plt.plot(ft_loss_test, "-b", label="Transformer Test")
+plt.plot(ft_loss_test, "--b", label="Transformer Train")
+plt.plot(ft_loss_train, "-b", label="Transformer Test")
+
 
 ft_rope_loss_path = "./data/ft_rope_stacking.loss"
 ft_rope_loss = torch.load(ft_rope_loss_path)
 ft_rope_loss_train, ft_rope_loss_test = np.array(ft_rope_loss["train"]), np.array(ft_rope_loss["test"])
-plt.plot(ft_rope_loss_train, "--r", label="Transformer-Rope Train")
-plt.plot(ft_rope_loss_test, "-r", label="Transformer-Rope Test")
+plt.plot(ft_rope_loss_test, "--r", label="Transformer-Rope Train")
+plt.plot(ft_rope_loss_train, "-r", label="Transformer-Rope Test")
 
 # indexs = np.arange(start=0, stop=len(ft_loss_train), step=15)
 # plt.plot(indexs, ft_loss_train[indexs], "--r",label="Attention Train")

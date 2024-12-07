@@ -12,15 +12,16 @@ import scienceplots
 defaultTicks =  {'xtick.top':False,'ytick.right':False}
 plt.style.use(['science','ieee','no-latex',defaultTicks])
 
+device = torch.device('cpu')
 X, Y, dataloader, _, xt, yt = loadStackingData() 
 ft_state_path = "./data/ft_stacking.model"
-ft_model.load_state_dict(state_dict=torch.load(ft_state_path))
+ft_model.load_state_dict(state_dict=torch.load(ft_state_path, map_location=device))
 
 ft_rope_state_path = "./data/ft_rope_stacking.model"
-ft_rope_model.load_state_dict(state_dict=torch.load(ft_rope_state_path))
+ft_rope_model.load_state_dict(state_dict=torch.load(ft_rope_state_path, map_location=device))
 
 mlp_state_path = "./data/mlp_stacking.model"
-mlp_model.load_state_dict(state_dict=torch.load(mlp_state_path))
+mlp_model.load_state_dict(state_dict=torch.load(mlp_state_path, map_location=device))
 
 
 
