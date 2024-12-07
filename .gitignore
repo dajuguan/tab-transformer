@@ -131,3 +131,5 @@ dmypy.json
 # custom
 imgs/
 data/
+*.png
+*/lightning_logs/
