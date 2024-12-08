@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 import pytorch_lightning as pl
 
-MAX_EPOCHS = 3
+MAX_EPOCHS = 300
 DEVICE= 'cpu' # 'gpu'
 BATCH_SIZE = 8
 # ==============================data==============================
@@ -16,6 +16,7 @@ def func1(x):
 def func2(x):
     return np.power(x, 2)
 
+# ============================= train data================
 num_data = 32
 data_x_numpy = np.linspace(-4, 4, num_data)
 data_y1_numpy = func1(data_x_numpy) + np.random.normal(0, 1,len(data_x_numpy))
@@ -36,6 +37,13 @@ tensor_y = torch.Tensor(data_y)
 OUTPUT_DIM = tensor_y.size()[1]
 toy_dataset = TensorDataset(tensor_x, tensor_y) # create your datset
 dataloader = DataLoader(toy_dataset, num_workers=4, batch_size=BATCH_SIZE, shuffle=True) # create your dataloader
+
+# ==============================test data =============================
+num_data_test = 64
+data_x_test_numpy  = np.linspace(-8, 8, num_data_test)
+data_y_test_numpy = np.stack((func1(data_x_test_numpy), func2(data_x_test_numpy)), axis = 1)
+data_x_test = np.reshape(data_x_test_numpy, [num_data_test, 1])
+tensor_test_x = torch.Tensor(data_x_test) # t
 
 # ==============================model==============================
 class GaussianMLPModel(nn.Module):
@@ -93,29 +101,32 @@ class GaussianMLP(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=0.1)
         return optimizer
 
-mlp = GaussianMLP(1,16,OUTPUT_DIM*2)
-trainer = pl.Trainer(devices=1, accelerator=DEVICE, max_epochs=MAX_EPOCHS, logger=False, enable_checkpointing=False)
-trainer.fit(mlp, dataloader)
+# ==============================1 model train==============================
+# mlp = GaussianMLP(1,16,OUTPUT_DIM*2)
+# trainer = pl.Trainer(devices=1, accelerator=DEVICE, max_epochs=MAX_EPOCHS, logger=False, enable_checkpointing=False)
+# trainer.fit(mlp, dataloader)
 
 # ==============================eval==============================
-mlp.eval()
-means_all, variances_all  = mlp(tensor_x)
-for i in range(0, OUTPUT_DIM):
-    means = means_all[:,i]
-    variances = variances_all[:, i]
+# mlp.eval()
 
-    means = means.flatten()
-    variances = variances.flatten()
-    sigmas = torch.sqrt(variances)
-    upper = means + sigmas
-    lower = means - sigmas
+# means_all, variances_all  = mlp(tensor_test_x)
+# for i in range(0, OUTPUT_DIM):
+#     means = means_all[:,i]
+#     variances = variances_all[:, i]
 
-    plt.plot(data_x_numpy, data_y[:,i], ".")
-    # plt.plot(data_x_numpy, data_y_true_numpy, "-r")
-    plt.plot(data_x_numpy, means.detach().numpy())
-    plt.fill_between(data_x_numpy, lower.detach().numpy(), upper.detach().numpy())
-plt.savefig(fr"./gaussian_mlp_mo.png")
-plt.close()
+#     means = means.flatten()
+#     variances = variances.flatten()
+#     sigmas = torch.sqrt(variances)
+#     upper = means + sigmas
+#     lower = means - sigmas
+
+#     plt.plot(data_x_test_numpy, data_y_test_numpy[:,i], "r")
+#     plt.plot(data_x_numpy, data_y[:,i], ".")
+#     # plt.plot(data_x_numpy, data_y_true_numpy, "-r")
+#     plt.plot(data_x_test_numpy, means.detach().numpy())
+#     plt.fill_between(data_x_test_numpy, lower.detach().numpy(), upper.detach().numpy())
+# plt.savefig(fr"./gaussian_mlp_mo.png")
+# plt.close()
 
 # ==============================N models train==============================
 models = []
@@ -134,7 +145,7 @@ def train(i):
     print(fr"thread {i} done ======")
 
 threads = []
-for i in range(2):
+for i in range(5):
     t = threading.Thread(target=train, args={i})
     threads.append(t)
     t.start()
@@ -146,7 +157,7 @@ means = []
 variances = []
 for model in models:
     model.eval()
-    mu, vr  = model(tensor_x)
+    mu, vr  = model(tensor_test_x)
     means.append(mu)
     variances.append(vr)
 
@@ -165,9 +176,10 @@ for i in range(0, OUTPUT_DIM):
     upper = mean + sigma
     lower = mean - sigma
 
+    plt.plot(data_x_test_numpy, data_y_test_numpy[:,i], "r")
     plt.plot(data_x_numpy, data_y[:, i], ".")
     # plt.plot(data_x_numpy, data_y_true_numpy, "-r")
-    plt.plot(data_x_numpy, mean.detach().numpy())
-    plt.fill_between(data_x_numpy, lower.detach().numpy(), upper.detach().numpy())
+    plt.plot(data_x_test_numpy, mean.detach().numpy())
+    plt.fill_between(data_x_test_numpy, lower.detach().numpy(), upper.detach().numpy())
 
 plt.savefig("./gaussian_mlp_mo_N.png")
