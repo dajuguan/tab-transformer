@@ -5,7 +5,7 @@ import sys
 sys.path.append("..")
 from mfnn.xydata import XYDataSet, XYZDataSet
 
-def loadData():
+def loadData(shuffle=False):
     x_low = np.loadtxt("./data/x_features.txt")
     y_low = np.loadtxt("./data/loss_2d.txt")
     y_high = np.loadtxt("./data/loss_3d.txt")
@@ -29,7 +29,7 @@ def loadData():
     train_len = 135
     x_low, y_low, y_high = x_low[:train_len], y_low[:train_len], y_high[:train_len]
 
-    loader_high = torch.utils.data.DataLoader(XYZDataSet(x_low, y_low, y_high), batch_size=len(x_low), shuffle=False)
+    loader_high = torch.utils.data.DataLoader(XYZDataSet(x_low, y_low, y_high), batch_size=len(x_low), shuffle=shuffle)
     return x_low,y_low, y_high, loader_high, r_2d, r_3d, xt_low, yt_low, yt_high
 
 def loadStackingData():
