@@ -42,7 +42,8 @@ class FCNN_DE(torch.nn.Module):
                  activation: type[torch.nn.Module] = torch.nn.Tanh,
                  low_fidelity_features: int = 0,
                  enable_attention=True,
-                 enable_embedding=False
+                 enable_embedding=False,
+                 const_variance=1e-8
                  ):
         super().__init__()
 
@@ -82,6 +83,7 @@ class FCNN_DE(torch.nn.Module):
         self.enable_attention = enable_attention
         self.enable_embedding = enable_embedding
         self.outdim = out_features
+        self.const_variance = const_variance
 
     def forward(self, x: torch.Tensor, y_low: torch.Tensor) -> torch.Tensor:
         x_categ = torch.tensor([]) # dummy categ need by ft_transformer
@@ -101,7 +103,7 @@ class FCNN_DE(torch.nn.Module):
         # return y_nonlinear
 
         mean, variance = torch.split(y_nonlinear, int(self.outdim/2), dim=-1)
-        variance = F.softplus(variance) + 1e-6 #Positive constraint
+        variance = F.softplus(variance) + self.const_variance #Positive constraint
         return mean, variance
 
 if __name__ == '__main__':

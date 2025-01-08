@@ -1,3 +1,4 @@
+# // DE: deep ensemble
 from mfnn.mfnn_de import FCNN_DE
 from mfnn.xydata import XYZDataSet
 import torch
@@ -83,6 +84,10 @@ def gaussian_nll(means, variances, ys):
     return nll
 
 
+import scienceplots
+defaultTicks =  {'xtick.top':False,'ytick.right':False}
+plt.style.use(['science','ieee','no-latex',defaultTicks])
+
 if __name__ == "__main__":
     #  print("x_low", x_low.shape, y_high.shape, y_low.shape)
     from autoencoder import loadModel
@@ -111,7 +116,7 @@ if __name__ == "__main__":
     print("y_pred:\n", y_pred,y_variance)
     # print("y_true:\n", y_high_encoded.detach().numpy())
 
-    for i in range(10, 50):
+    for i in range(16, 17):
         x_test = x_low[i-1:i].to(device)
         y_low_test = y_low[i-1:i].to(device)
 
@@ -125,10 +130,10 @@ if __name__ == "__main__":
 
         lower = y_pred - sigma
         upper = y_pred + sigma
-        plt.plot(y_low[i-1]/100, r_2d, "-b", label="2d")
-        plt.plot(y_pred/100, r_3d, '-r',label="pred")
-        plt.fill_betweenx(r_3d, lower/100, upper/100, label="sigma")
-        plt.plot(y_true/100, r_3d, '--k',label="true")
+        plt.plot(y_low[i-1]/100, r_2d, label="2d")
+        plt.plot(y_pred/100, r_3d,label="pred")
+        plt.fill_betweenx(r_3d, lower/100, upper/100, alpha=0.1, color="red",label="sigma")
+        plt.plot(y_true/100, r_3d, label="true")
         plt.legend()
         plt.savefig(fr"./imgs/mlp/{i}.png")
         plt.close()

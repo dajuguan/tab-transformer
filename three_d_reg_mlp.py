@@ -27,8 +27,8 @@ model = FCNN(
      )
 
 model.to(torch.double)
-model_path = "./data/mlp.model"
-loss_path = "./data/mlp.loss"
+model_path = "./data/mlp_withpaperdata.model"
+loss_path = "./data/mlp_withpaperdata.loss"
 
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
     "Train the model by given dataloader."
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     critrion = torch.nn.MSELoss()
     critrion = torch.nn.SmoothL1Loss()
 
-    # train(model, loader_high, critrion, optimizer, STEPS, device)
+    train(model, loader_high, critrion, optimizer, STEPS, device)
     ## eval
     N=1
     model.load_state_dict(state_dict=torch.load(model_path))

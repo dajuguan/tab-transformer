@@ -1,4 +1,5 @@
 # 带并行版本
+# in domain
 from mfnn.mfnn_de import FCNN_DE
 from mfnn.xydata import XYDataSet
 import torch
@@ -10,7 +11,9 @@ from mfnn.data_loader import loadData
 from mfnn.loss_func import gaussian_nll
 import random
 
-x_low,y_low, y_high, loader_high, r_2d, r_3d, xt_low, yt_low, yt_high = loadData() 
+SCALE=100
+START=57
+x_low,y_low, y_high, loader_high, r_2d, r_3d, xt_low, yt_low, yt_high = loadData(start=START,scale=SCALE) 
 # print("x_low", x_low.shape, y_high.shape, y_low.shape)
 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
@@ -35,10 +38,10 @@ def train(i, critrion, steps, device="cpu"):
 
     model = de_model()
     model.to(device)
-    model_path = fr"./data/ft_de{i}.model"
-    loss_path = fr"./data/ft_de{i}.loss"
+    model_path = fr"./data/ft_de{i}.id.model"
+    loss_path = fr"./data/ft_de{i}.id.loss"
 
-    _,_, _, dataloader, _, _, _, _, _ = loadData(shuffle=True, resampleIndex=15) 
+    _,_, _, dataloader, _, _, _, _, _ = loadData(shuffle=True, resampleIndex=57,scale=SCALE,start=START) 
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3, weight_decay=1e-9)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*steps, 0.8*steps])
@@ -68,23 +71,23 @@ def train(i, critrion, steps, device="cpu"):
             optimizer.step()
             tq.set_postfix(loss=f"{loss.item():.4e}")
 
-        # record results
         epochs_iter.set_postfix(loss=f"{runningLoss:.4e}")
+        # record results
         # run test
-        yt_pred, yt_variance = model(_xt_low, _yt_low)
-        loss_test = critrion(yt_pred.to("cpu"), yt_variance.to("cpu"),yt_high).item()
-        train_loss.append(runningLoss)
-        test_loss.append(loss_test)
+        # yt_pred, yt_variance = model(_xt_low, _yt_low)
+        # loss_test = critrion(yt_pred.to("cpu"), yt_variance.to("cpu"),yt_high).item()
+        # train_loss.append(runningLoss)
+        # test_loss.append(loss_test)
 
         scheduler.step()
     print(f"{i}-th training complete", f'wall time = {time.time()- t_start:.2f}s')
     torch.save(model.state_dict(), model_path)
-    torch.save({"train": train_loss, "test": test_loss}, loss_path)
+    # torch.save({"train": train_loss, "test": test_loss}, loss_path)
 
 
 import threading
 import multiprocessing as mp
-STEPS = 4000
+STEPS = 600
 N_MODELS = 5
 # critrion = torch.nn.L1Loss()
 # critrion = torch.nn.MSELoss()
@@ -113,12 +116,12 @@ def predict(tensor_x, tensor_y_low):
     models = []
     means = []
     variances = []
-    for i in [0]:
+    for i in [0,3]:
     # for i in range(N_MODELS):
         model = de_model()
         model.eval()
         # print("device:", next(model.parameters()).device, tensor_x.device, tensor_y_low.device)
-        model_path = fr"./data/ft_de{i}.model"
+        model_path = fr"./data/ft_de{i}.id.model"
         model.load_state_dict(state_dict=torch.load(model_path))
         models.append(model)
     
@@ -161,8 +164,8 @@ if __name__ == "__main__":
     print("y_pred:\n", y_pred[:, :7],y_pred[:, -7:])
     print("y_true:\n", y_high[:N].detach().numpy()[:, :7], y_high[:N].detach().numpy()[:, -7:])
 
-    # for i in range(100, 135):
-    for i in [4, 16, 58]:
+    for i in range(58-START,59-START):
+    # for i in [4, 16, 58]:
         x_test = x_low[i-1:i]
         y_low_test = y_low[i-1:i]
 
@@ -173,12 +176,12 @@ if __name__ == "__main__":
 
         y_true = y_high[i-1].detach().numpy()
 
-        plt.plot(y_low[i-1]/100, r_2d, "-b", label="Quasi 3D")
-        plt.plot(y_true/100, r_3d, '--k',label="3D")
-        plt.plot(y_pred/100, r_3d, '-r',label="DET predicted")
-        plt.fill_betweenx(r_3d, y_lower/100, y_upper/100, alpha=0.2, color="red",label="$\sigma$")
+        plt.plot(y_low[i-1]/SCALE, r_2d, "-b", label="Quasi 3D")
+        plt.plot(y_true/SCALE, r_3d, '--k',label="3D")
+        plt.plot(y_pred/SCALE, r_3d, '-r',label="DET predicted")
+        plt.fill_betweenx(r_3d, y_lower/SCALE, y_upper/SCALE, alpha=0.2, color="red",label="$\sigma$")
         plt.xlabel("${Y_p}$")
         plt.ylabel("Normalized span")
         plt.legend()
-        plt.savefig(fr"./imgs/ft/{i}.png")
+        plt.savefig(fr"./imgs/ft_withpaper/{i}.id.png")
         plt.close()

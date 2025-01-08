@@ -1,4 +1,5 @@
-# 带并行版本
+# 带并行版本, ofd: out of domain
+# 包含paper训练数据
 from mfnn.mfnn_de import FCNN_DE
 from mfnn.xydata import XYDataSet
 import torch
@@ -16,14 +17,13 @@ x_low,y_low, y_high, loader_high, r_2d, r_3d, xt_low, yt_low, yt_high = loadData
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
 def de_model():
     model = FCNN_DE(
-        x_low.size()[-1],
+        x_low.size()[-1], 
         y_high.size()[-1] * 2, 
-        [128], 
+        [256],
         0, 
         torch.nn.LeakyReLU, 
         low_fidelity_features=y_low.size()[-1],
-        enable_embedding=False,
-        const_variance=1e-9
+        enable_embedding=False
         )
     model.to(torch.double)
     return model
@@ -35,10 +35,10 @@ def train(i, critrion, steps, device="cpu"):
 
     model = de_model()
     model.to(device)
-    model_path = fr"./data/ft_de{i}.model"
-    loss_path = fr"./data/ft_de{i}.loss"
+    model_path = fr"./data/ft_de_ofd{i}.model"
+    loss_path = fr"./data/ft_de_ofd{i}.loss"
 
-    _,_, _, dataloader, _, _, _, _, _ = loadData(shuffle=True, resampleIndex=15) 
+    _,_, _, dataloader, _, _, _, _, _ = loadData(shuffle=True, indices_to_remove=[6,17,22,25,26,27,28,29,30,31,40,57,58,59,62,73,74]) 
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3, weight_decay=1e-9)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*steps, 0.8*steps])
@@ -113,12 +113,12 @@ def predict(tensor_x, tensor_y_low):
     models = []
     means = []
     variances = []
-    for i in [0]:
+    for i in [4]:
     # for i in range(N_MODELS):
         model = de_model()
         model.eval()
         # print("device:", next(model.parameters()).device, tensor_x.device, tensor_y_low.device)
-        model_path = fr"./data/ft_de{i}.model"
+        model_path = fr"./data/ft_de_ofd{i}.model"
         model.load_state_dict(state_dict=torch.load(model_path))
         models.append(model)
     
@@ -143,9 +143,11 @@ def predict(tensor_x, tensor_y_low):
     upper = upper.to("cpu").detach().numpy()
     return mean_avg, sigma_avg, lower, upper
 
+
 import scienceplots
 defaultTicks =  {'xtick.top':False,'ytick.right':False}
 plt.style.use(['science','ieee','no-latex',defaultTicks])
+
 if __name__ == "__main__":
     ## train
     # de_train_gpu()
@@ -161,7 +163,7 @@ if __name__ == "__main__":
     print("y_pred:\n", y_pred[:, :7],y_pred[:, -7:])
     print("y_true:\n", y_high[:N].detach().numpy()[:, :7], y_high[:N].detach().numpy()[:, -7:])
 
-    # for i in range(100, 135):
+    # for i in range(1, 10):
     for i in [4, 16, 58]:
         x_test = x_low[i-1:i]
         y_low_test = y_low[i-1:i]
@@ -180,5 +182,5 @@ if __name__ == "__main__":
         plt.xlabel("${Y_p}$")
         plt.ylabel("Normalized span")
         plt.legend()
-        plt.savefig(fr"./imgs/ft/{i}.png")
+        plt.savefig(fr"./imgs/ft_ofm/{i}.png")
         plt.close()

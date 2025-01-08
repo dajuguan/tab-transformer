@@ -3,6 +3,26 @@
 ## 论文数据说明
 14,16, 58
 现在用的16,58
+DE不好的采用three_d_reg_ft_de_ofd.py的第4个模型
+DE好的采用three_d_reg_ft_de.py的第4个模型
+注意一定要把不同的模型用不同的名字，否则把模型覆盖了
+### spanwise loss distribution
+- loss: three_d_model_loss.py
+- loss distribution: python3 three_d_model_com.py (修改注释)
+- caseI, II 不带UQ, python3 three_d_model_com.py
+- caseI UQ: python3 three_d_reg_ft_de.py imgs/ft/16.png
+- caseII UQ 不确定性高: python3 three_d_reg_ft_de_ofd.py imgs/ft_ofm/58.png
+- caseII UQ不确定性低: python3 three_d_reg_ft_de_id58.py imgs/ft_withpaper/1.id.png (修改了start)
+
+## Stacking line
+- loss: stacking_line.py stacking_line.png
+- 弯掠角度和弯掠高对比: stacking_comp.py
+- CaseII域外结果预测: stacking_ft_de.case2.ofd.py stacking_line_58.png (数据index实际上是57)
+- CaseII域内结果预测: stacking_ft_de.case2.id.py stacking_line_58.id.png
+
+## 涡轮算例
+- spanwise loss: three_d_reg_ft_de_withpaper.py imgs/ft_withpaper/135.withpaper.png
+- stacking line: stacking_ft_de.withpaper.py stacking_line_135.withpaper.png
 
 ## Tab Transformer
 

@@ -46,7 +46,7 @@ def loss_compare():
         # plt.plot(y_pred_tabnet/100, r_3d, ':g',label="tabnet")
         plt.plot(y_low[i-1]/100, r_2d, "-b", label="Quasi 3D")
 
-        plt.ylabel("Span Normalized")
+        plt.ylabel("Normalized span")
         plt.xlabel("${Y_p}$")
         plt.legend()
         plt.savefig(fr"./imgs/{i}.png")
@@ -63,16 +63,18 @@ def loss_distribution():
         elif (y_true[i] -y_pred[i]) / y_true[i] > percent:
             y_pred[i] = y_true[i] + (y_true[i] -y_pred[i])/5
 
-    plt.scatter(y_true, y_pred, color="black" ,s=1, label="Transformer model")
-    plt.plot(y_true, y_true, "-r", label="0% Error Line")
+    plt.scatter(y_true, y_pred, color="black" ,s=1, label="Transformer predicted")
+    plt.plot(y_true, y_true, "-r", label="True")
 
     y_true = np.sort(y_true)
     lower, upper = y_true * (1-percent), y_true * (1+percent)
     print("lower", lower.shape, y_true.shape)
-    plt.fill_between(y_true, lower, upper, alpha=0.3, label="10% Error Line")  
+    plt.fill_between(y_true, lower, upper, alpha=0.3, label="10% Error line")  
 
-    plt.xlabel("${Y_p}$, CFD")  
-    plt.ylabel("${Y_p}$, Transformer model") 
+    plt.xlim([0.01,0.14])
+    plt.ylim([0.01,0.14])
+    plt.xlabel("${Y_p}$, 3D CFD")  
+    plt.ylabel("${Y_p}$, Transformer predicted") 
     plt.legend()
     plt.savefig("./imgs/loss/distribution.png")
 
@@ -84,6 +86,6 @@ def plotCase(index):
     plt.legend()
     plt.plot(y_true/100, r_3d, '--k',label="3D")
     plt.savefig("./imgs/loss/case14.png")
-# loss_compare()
-loss_distribution()
+loss_compare()
+# loss_distribution()
 # plotCase(13)

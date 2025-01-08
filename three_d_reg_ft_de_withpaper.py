@@ -18,12 +18,11 @@ def de_model():
     model = FCNN_DE(
         x_low.size()[-1],
         y_high.size()[-1] * 2, 
-        [128], 
+        [256], 
         0, 
         torch.nn.LeakyReLU, 
         low_fidelity_features=y_low.size()[-1],
-        enable_embedding=False,
-        const_variance=1e-9
+        enable_embedding=False
         )
     model.to(torch.double)
     return model
@@ -35,10 +34,10 @@ def train(i, critrion, steps, device="cpu"):
 
     model = de_model()
     model.to(device)
-    model_path = fr"./data/ft_de{i}.model"
-    loss_path = fr"./data/ft_de{i}.loss"
+    model_path = fr"./data/ft_de{i}.withpaper.model"
+    loss_path = fr"./data/ft_de{i}.withpaper.loss"
 
-    _,_, _, dataloader, _, _, _, _, _ = loadData(shuffle=True, resampleIndex=15) 
+    _,_, _, dataloader, _, _, _, _, _ = loadData(shuffle=True, resampleIndex=57) 
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3, weight_decay=1e-9)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*steps, 0.8*steps])
@@ -113,12 +112,12 @@ def predict(tensor_x, tensor_y_low):
     models = []
     means = []
     variances = []
-    for i in [0]:
+    for i in [1,2]:
     # for i in range(N_MODELS):
         model = de_model()
         model.eval()
         # print("device:", next(model.parameters()).device, tensor_x.device, tensor_y_low.device)
-        model_path = fr"./data/ft_de{i}.model"
+        model_path = fr"./data/ft_de{i}.withpaper.model"
         model.load_state_dict(state_dict=torch.load(model_path))
         models.append(model)
     
@@ -161,8 +160,7 @@ if __name__ == "__main__":
     print("y_pred:\n", y_pred[:, :7],y_pred[:, -7:])
     print("y_true:\n", y_high[:N].detach().numpy()[:, :7], y_high[:N].detach().numpy()[:, -7:])
 
-    # for i in range(100, 135):
-    for i in [4, 16, 58]:
+    for i in [58,135]:
         x_test = x_low[i-1:i]
         y_low_test = y_low[i-1:i]
 
@@ -174,11 +172,11 @@ if __name__ == "__main__":
         y_true = y_high[i-1].detach().numpy()
 
         plt.plot(y_low[i-1]/100, r_2d, "-b", label="Quasi 3D")
-        plt.plot(y_true/100, r_3d, '--k',label="3D")
-        plt.plot(y_pred/100, r_3d, '-r',label="DET predicted")
+        # plt.plot(y_true/100, r_3d, '--k',label="3D")
+        plt.plot(y_pred/100, r_3d, '-r',label="Predicted")
         plt.fill_betweenx(r_3d, y_lower/100, y_upper/100, alpha=0.2, color="red",label="$\sigma$")
         plt.xlabel("${Y_p}$")
         plt.ylabel("Normalized span")
         plt.legend()
-        plt.savefig(fr"./imgs/ft/{i}.png")
+        plt.savefig(fr"./imgs/ft_withpaper/{i}.withpaper.png")
         plt.close()

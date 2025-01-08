@@ -6,9 +6,10 @@ from mfnn.data_loader import loadStackingData
 import numpy as np
 import time
 import tqdm
+import matplotlib.pyplot as plt
 
-
-X, Y, dataloader, dim_rope_seq, xt, yt = loadStackingData()
+data_type = "d4"
+X, Y, dataloader, dim_rope_seq, xt, yt = loadStackingData(datatype="d4")
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu") 
 model = FTTransformer(
     categories = (),      # tuple containing the number of unique values within each category
@@ -22,9 +23,9 @@ model = FTTransformer(
     ff_dropout = 0.0                    # feed forward dropout
 )
 
-model_path = "./data/ft_stacking.model"
+model_path = f"./data/ft_stacking_{data_type}.model"
 
-loss_path = "./data/ft_stacking.loss"
+loss_path = f"./data/ft_stacking_{data_type}.loss"
 def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
         "Train the model by given dataloader."
         t_start = time.time()
@@ -64,26 +65,47 @@ def train(model, dataloader, critrion, optimizer, steps, device="cpu"):
         print("training complete", f'wall time = {time.time()- t_start:.2f}s')
         torch.save({"train": train_loss, "test": test_loss}, loss_path)
 
-
+from stacking_line import stacking_line
 if __name__ == "__main__":
     #  print("x_low", x_low.shape, y_high.shape, y_low.shape)
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
-    STEPS = 2000
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-8)
+    STEPS = 3000
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5*STEPS, 0.8*STEPS])
     critrion = torch.nn.L1Loss()
     critrion = torch.nn.MSELoss()
     critrion = torch.nn.SmoothL1Loss()
 
-    train(model, dataloader, critrion, optimizer, STEPS, device)
-    ## eval
-    N=1
-    model.eval()
-    x_test = X[:N].to(device)
-    y_low_test = Y[:N].to(device)
-    y_pred = model(torch.tensor([]), x_test).to("cpu").detach().numpy()
+    # train(model, dataloader, critrion, optimizer, STEPS, device)
 
-    float_formatter = "{:.4f}".format
-    np.set_printoptions(formatter={'float_kind':float_formatter})
-    print("y_pred:\n", y_pred)
-    print("y_true:\n", Y[:N].detach().numpy())
+    ## eval
+    model = model.to("cpu")
+    model.load_state_dict(state_dict=torch.load(model_path))
+    model.eval()
+    N=1
+    for i in range(1,2):
+        x_test = X[i:i+1]
+        y_true = Y[i:i+1][0].detach().numpy()
+        y_pred = model(torch.tensor([]), x_test).to("cpu")[0].detach().numpy()
+
+        float_formatter = "{:.4f}".format
+        np.set_printoptions(formatter={'float_kind':float_formatter})
+
+        print("y_pred:\n", y_pred)
+        print("y_true:\n", y_true)
+        
+        bow_pred_x, bow_pred_y = stacking_line(y_pred[0]*10, y_pred[4],y_pred[1]*10,y_pred[5])
+        plt.plot(bow_pred_x, bow_pred_y, label="predicted bow")
+        sweep_pred_x, sweep_pred_y = stacking_line(y_pred[2], y_pred[6], y_pred[3],y_pred[7])
+        plt.plot(sweep_pred_x, sweep_pred_y, label="predicted sweep")
+
+        bow_true_x, bow_true_y = stacking_line(y_true[0]*10, y_true[4],y_true[1]*10,y_true[5])
+        plt.plot(bow_true_x, bow_true_y, label="true bow")
+
+        sweep_true_x, sweep_true_y = stacking_line(y_pred[2], y_pred[6], y_pred[3],y_pred[7])
+        plt.plot(sweep_true_x, sweep_true_y, label="true sweep")
+
+        plt.ylim([0,1])
+        plt.xlim([-0.5, 0.5])
+        plt.legend()
+        plt.savefig("./stacking_line.png")
