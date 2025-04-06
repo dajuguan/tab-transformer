@@ -146,6 +146,7 @@ class TabTransformer(nn.Module):
     def __init__(
         self,
         *,
+        # categories = (3, 4),  # tuple containing the number of unique values within each category
         categories,
         num_continuous,
         dim,
@@ -233,16 +234,17 @@ class TabTransformer(nn.Module):
 
         if self.num_unique_categories > 0:
             x_categ = x_categ + self.categories_offset
-
+            # print("x_categ:", x_categ.size(), self.categories_offset)
             categ_embed = self.category_embed(x_categ)
+            # print("categ_embed:", categ_embed.size())
 
             if self.use_shared_categ_embed:
                 shared_categ_embed = repeat(self.shared_category_embed, 'n d -> b n d', b = categ_embed.shape[0])
                 categ_embed = torch.cat((categ_embed, shared_categ_embed), dim = -1)
 
             x, attns = self.transformer(categ_embed, return_attn = True)
-
             flat_categ = rearrange(x, 'b ... -> b (...)')
+            # print("attn:", x.size(), flat_categ.size())
             xs.append(flat_categ)
 
         assert x_cont.shape[1] == self.num_continuous, f'you must pass in {self.num_continuous} values for your continuous input'
@@ -254,7 +256,7 @@ class TabTransformer(nn.Module):
 
             normed_cont = self.norm(x_cont)
             xs.append(normed_cont)
-
+        # print("x_cont:", x_cont.size(), flat_categ.size(), normed_cont.size())
         x = torch.cat(xs, dim = -1)
         logits = self.mlp(x)
 
