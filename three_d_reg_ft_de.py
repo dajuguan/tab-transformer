@@ -113,7 +113,7 @@ def predict(tensor_x, tensor_y_low):
     models = []
     means = []
     variances = []
-    for i in [0]:
+    for i in [1]:
     # for i in range(N_MODELS):
         model = de_model()
         model.eval()

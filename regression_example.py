@@ -6,7 +6,7 @@ from tab_transformer_pytorch import FTTransformer
 cont_mean_std = torch.randn(3, 2)
 
 model = TabTransformer(
-    categories=(),
+    categories=(3,4),
     num_continuous = 3,                # number of continuous values
     dim = 32,                           # dimension, paper set at 32
     dim_out = 3,                        # binary prediction, but could be anything
@@ -33,14 +33,15 @@ model = TabTransformer(
 
 import numpy as np
 
-x_categ = torch.from_numpy(np.array([]))
+# low, high shoule be less than values in category tuple
+x_categ = torch.randint(0, 3, (100,2))
 N=100
 x_data = torch.rand(100, 3)
 y_data = torch.Tensor([(x_data[:,0]*2).tolist(), (x_data[:,1]*3).tolist(),(x_data[:,2]*4).tolist()]).transpose(0,1)
 
 criterion = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-STEPS = 1500
+STEPS = 15
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.4 * STEPS, 0.7 * STEPS], gamma=0.1)
 
 
@@ -54,10 +55,9 @@ for epoch in range(STEPS):
     loss.backward()
     optimizer.step()
     scheduler.step()
-
 model.eval()
 N=4
-pred = model(x_categ,x_data[0:N,:], False) # (1, 1)
+pred = model(x_categ[:N],x_data[0:N,:], False) # (1, 1)
 print("true:\n", y_data[0:N,:])
 print("pred:\n", pred)
 # print("attn:", attn.size())
